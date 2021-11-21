@@ -146,7 +146,7 @@ export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
 /* 
   判断是不是对象，
   使用typeof null 也是object
-
+  但是这里如果是数组，也是返回TRUE的 
 */
 export const isObject = (val: unknown): val is Record<any, any> =>
   val !== null && typeof val === 'object'
@@ -162,26 +162,42 @@ export const isPromise = <T = any>(val: unknown): val is Promise<T> => {
 
 /* 
   对象转成字符串
-
+  toTypeString 对象转字符串
+  call 是一个函数，里面第一个参数，是执行函数里面this的指向
 */
 export const objectToString = Object.prototype.toString
 export const toTypeString = (value: unknown): string =>
   objectToString.call(value)
-
+/* 
+  学到了，这个挺好的，封装一下，可以直接判断是不是等于 'Array'
+  比如， toRawType('');  // 'String' 方便了很多，不用每次都写很长的计算了
+*/
 export const toRawType = (value: unknown): string => {
   // extract "RawType" from strings like "[object RawType]"
   return toTypeString(value).slice(8, -1)
 }
-
+/* 
+  判断是不是一个纯粹的对象
+*/
 export const isPlainObject = (val: unknown): val is object =>
   toTypeString(val) === '[object Object]'
-
+/* 
+  判断是不是数字类型的字符串key
+  parseInt 注意，第二个参数是进制，设置为10 的意思是，把key认为是10进制，生成正常的10进制数
+  常用parseInt(key, 2); 把一个二进制字符串转化为 10进制的数字
+  const b = 21;
+  b.toString(2); // 10进制转化为二进制
+*/
 export const isIntegerKey = (key: unknown) =>
   isString(key) &&
   key !== 'NaN' &&
   key[0] !== '-' &&
   '' + parseInt(key, 10) === key
 
+  /* 
+    isReservedProp('onVnodeBeforeMount'); // true 
+    是否是保留属性
+  */
 export const isReservedProp = /*#__PURE__*/ makeMap(
   // the leading comma is intentional so empty string "" is also included
   ',key,ref,' +
@@ -189,7 +205,10 @@ export const isReservedProp = /*#__PURE__*/ makeMap(
     'onVnodeBeforeUpdate,onVnodeUpdated,' +
     'onVnodeBeforeUnmount,onVnodeUnmounted'
 )
+/* 
+  缓存函数
 
+*/
 const cacheStringFunction = <T extends (str: string) => string>(fn: T): T => {
   const cache: Record<string, string> = Object.create(null)
   return ((str: string) => {
@@ -198,17 +217,32 @@ const cacheStringFunction = <T extends (str: string) => string>(fn: T): T => {
   }) as any
 }
 
+/* 
+  \w 代表数字，大小写字母，下划线组成
+  () 代表 分组捕获
+
+*/
 const camelizeRE = /-(\w)/g
 /**
  * @private
  */
+/* 
+    camelize 函数 表示 连字符 转驼峰
+    on-click 变成 onClick
+*/
 export const camelize = cacheStringFunction((str: string): string => {
   return str.replace(camelizeRE, (_, c) => (c ? c.toUpperCase() : ''))
 })
 
+/* 
+  \B 就是指边界，也就是说hyphenateRE这个正则找到大写字母的边界
+  hyphenate 函数的作用就是 驼峰 转 连字符 onClick --> on-click
+*/
 const hyphenateRE = /\B([A-Z])/g
 /**
  * @private
+ */
+/* 
  */
 export const hyphenate = cacheStringFunction((str: string) =>
   str.replace(hyphenateRE, '-$1').toLowerCase()
@@ -217,6 +251,7 @@ export const hyphenate = cacheStringFunction((str: string) =>
 /**
  * @private
  */
+/* 字符串 ，首字母大写 */
 export const capitalize = cacheStringFunction(
   (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 )
@@ -224,20 +259,44 @@ export const capitalize = cacheStringFunction(
 /**
  * @private
  */
+/* click 转为 onClick */
 export const toHandlerKey = cacheStringFunction((str: string) =>
   str ? `on${capitalize(str)}` : ``
 )
 
+/* 
+  Object.is 这个很有意思， 是ES6 新的语法
+  作用是比较两个值是否是严格相等，用于watch检测，值有没有变化
+
+*/
 // compare whether a value has changed, accounting for NaN.
 export const hasChanged = (value: any, oldValue: any): boolean =>
   !Object.is(value, oldValue)
 
+  /* 
+    invokeArrayFns: 执行数组里的函数
+    方便统一执行多个函数
+  */
 export const invokeArrayFns = (fns: Function[], arg?: any) => {
   for (let i = 0; i < fns.length; i++) {
     fns[i](arg)
   }
 }
 
+/* 
+  Object.defineProperty 是一个很重要的API
+  value, 当试图获取属性时，返回的值
+  writable, 该属性是否可写
+  enumerable, 表示 在for in 中是否会被枚举
+  configuarable， 表示是否能被删除
+  set 该属性更新操作时候，所调用的函数
+  get 该属性，获取的时候，调用的函数
+
+  除了value的默认值是undefined之外，别的默认值都是FALSE
+*/
+/* 
+  所以说，def函数的作用是，定义一个可以删除，但是不能改变和枚举的key，value
+*/
 export const def = (obj: object, key: string | symbol, value: any) => {
   Object.defineProperty(obj, key, {
     configurable: true,
@@ -246,11 +305,22 @@ export const def = (obj: object, key: string | symbol, value: any) => {
   })
 }
 
+/* 
+  Number.isNaN(NaN); // true
+  转化为数字
+*/
 export const toNumber = (val: any): any => {
   const n = parseFloat(val)
   return isNaN(n) ? val : n
 }
 
+/* 
+  全局对象 
+  global 指的node环境下
+  第一次这个_globalThis为undefined
+  第二次就是正常的那个值了
+  这个写法很棒
+*/
 let _globalThis: any
 export const getGlobalThis = (): any => {
   return (
