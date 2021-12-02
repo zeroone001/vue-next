@@ -87,4 +87,5 @@ function compileToFunction(
 registerRuntimeCompiler(compileToFunction)
 
 export { compileToFunction as compile }
+/* 这里把 createApp 暴露出去，让我们使用 createApp */
 export * from '@vue/runtime-dom'

@@ -62,8 +62,14 @@ export const render = ((...args) => {
 export const hydrate = ((...args) => {
   ensureHydrationRenderer().hydrate(...args)
 }) as RootHydrateFunction
-
+/* 
+    这就是Vue的入口函数
+    app.use(store).use(router).mount('#app')
+*/
 export const createApp = ((...args) => {
+  /* 
+    创建APP实例
+  */
   const app = ensureRenderer().createApp(...args)
 
   if (__DEV__) {
@@ -72,11 +78,16 @@ export const createApp = ((...args) => {
   }
 
   const { mount } = app
+  /* 重写mount */
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
+    /* 标准化容器 也就是DOM节点 */
     const container = normalizeContainer(containerOrSelector)
+
+    /* 如果获取不到， 直接返回 */
     if (!container) return
 
     const component = app._component
+    /* 如果组件不存在render函数，和模板template，直接使用container里面的innerHTML */
     if (!isFunction(component) && !component.render && !component.template) {
       // __UNSAFE__
       // Reason: potential execution of JS expressions in in-DOM template.
@@ -99,8 +110,11 @@ export const createApp = ((...args) => {
     }
 
     // clear content before mounting
+    /* 挂载之前，清空里面的内容 */
     container.innerHTML = ''
+    /* 最后，挂载容器 */
     const proxy = mount(container, false, container instanceof SVGElement)
+    /* 把 v-cloak 换成  data-v-app */
     if (container instanceof Element) {
       container.removeAttribute('v-cloak')
       container.setAttribute('data-v-app', '')

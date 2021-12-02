@@ -331,6 +331,12 @@ function baseCreateRenderer(
 ): HydrationRenderer
 
 // implementation
+
+/* 
+  这个函数超级长
+  createRenderer 的主逻辑操作
+  这个函数是核心逻辑
+*/
 function baseCreateRenderer(
   options: RendererOptions,
   createHydrationFns?: typeof createHydrationFunctions
@@ -2348,7 +2354,7 @@ function baseCreateRenderer(
     hydrate,
     createApp: createAppAPI(render, hydrate)
   }
-}
+} /* baseCreateRenderer END */
 
 export function setRef(
   rawRef: VNodeNormalizedRef,

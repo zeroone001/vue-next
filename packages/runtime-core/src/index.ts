@@ -100,7 +100,9 @@ export { withDirectives } from './directives'
 export { useSSRContext, ssrContextKey } from './helpers/useSsrContext'
 
 // Custom Renderer API ---------------------------------------------------------
-
+/* 
+  createRenderer 这个是关键
+*/
 export { createRenderer, createHydrationRenderer } from './renderer'
 export { queuePostFlushCb } from './scheduler'
 export { warn } from './warning'
