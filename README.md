@@ -15,8 +15,11 @@
 11. callWithErrorHandling() 调用setup() 传入两个参数 props 和  setupContext
 12. handleSetupResult(instance, setupResult, isSSR); 处理setup 函数返回的对象
 
+## 目录模块
 
-
+* runtime-dom   运行时dom 关api，属性，事件处理
+* runtime-core  运行时核心实例相关代码（平台无关）
+ 
 
 # vue-next [![npm](https://img.shields.io/npm/v/vue/next.svg)](https://www.npmjs.com/package/vue/v/next) [![build status](https://github.com/vuejs/vue-next/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/vuejs/vue-next/actions/workflows/ci.yml)
 
