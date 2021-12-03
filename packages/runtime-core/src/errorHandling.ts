@@ -58,7 +58,9 @@ export const ErrorTypeStrings: Record<number | string, string> = {
 }
 
 export type ErrorTypes = LifecycleHooks | ErrorCodes
-
+/* 
+  比如setup 就在这里调用的
+*/
 export function callWithErrorHandling(
   fn: Function,
   instance: ComponentInternalInstance | null,
@@ -67,6 +69,9 @@ export function callWithErrorHandling(
 ) {
   let res
   try {
+    /* 
+      调用函数，传入参数
+    */
     res = args ? fn(...args) : fn()
   } catch (err) {
     handleError(err, instance, type)

@@ -409,7 +409,7 @@ function baseCreateRenderer(
       n2.dynamicChildren = null
     }
     /* 
-
+      根绝n2的类型，执行不同的函数
     */
     const { type, ref, shapeFlag } = n2
     switch (type) {

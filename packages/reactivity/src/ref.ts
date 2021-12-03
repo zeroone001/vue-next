@@ -142,7 +142,10 @@ const shallowUnwrapHandlers: ProxyHandler<any> = {
     }
   }
 }
-
+/* 
+  如果isReactive的话，直接返回
+  否则 Proxy
+*/
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {

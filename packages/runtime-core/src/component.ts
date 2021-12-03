@@ -567,7 +567,10 @@ export function isStatefulComponent(instance: ComponentInternalInstance) {
 }
 
 export let isInSSRComponentSetup = false
-
+/* 
+  composition-api
+  setupComponent： 初始化props，slots， data
+*/
 export function setupComponent(
   instance: ComponentInternalInstance,
   isSSR = false
@@ -585,7 +588,9 @@ export function setupComponent(
   isInSSRComponentSetup = false
   return setupResult
 }
-
+/* 
+  代理组件实例上下文，调用setup()
+*/
 function setupStatefulComponent(
   instance: ComponentInternalInstance,
   isSSR: boolean
@@ -625,6 +630,9 @@ function setupStatefulComponent(
     exposePropsOnRenderContext(instance)
   }
   // 2. call setup()
+  /* 
+    setup 方法
+  */
   const { setup } = Component
   if (setup) {
     const setupContext = (instance.setupContext =
@@ -632,6 +640,9 @@ function setupStatefulComponent(
 
     setCurrentInstance(instance)
     pauseTracking()
+    /* 
+      调用setup 函数，传入两个参数 props 和 setupContext
+    */
     const setupResult = callWithErrorHandling(
       setup,
       instance,
@@ -640,7 +651,7 @@ function setupStatefulComponent(
     )
     resetTracking()
     unsetCurrentInstance()
-
+      /* 如果返回的是Promise */
     if (isPromise(setupResult)) {
       setupResult.then(unsetCurrentInstance, unsetCurrentInstance)
 
@@ -664,19 +675,27 @@ function setupStatefulComponent(
         )
       }
     } else {
+      /* 
+        处理setup 函数执行后，返回的对象
+      */
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
     finishComponentSetup(instance, isSSR)
   }
 }
-
+/* 
+  处理setup 函数执行后，返回的对象
+*/
 export function handleSetupResult(
   instance: ComponentInternalInstance,
   setupResult: unknown,
   isSSR: boolean
 ) {
   if (isFunction(setupResult)) {
+    /* 
+      如果是函数
+    */
     // setup returned an inline render function
     if (__SSR__ && (instance.type as ComponentOptions).__ssrInlineRender) {
       // when the function's name is `ssrRender` (compiled by SFC inline mode),
@@ -686,6 +705,7 @@ export function handleSetupResult(
       instance.render = setupResult as InternalRenderFunction
     }
   } else if (isObject(setupResult)) {
+    /* 如果是对象，这个是常写的 */
     if (__DEV__ && isVNode(setupResult)) {
       warn(
         `setup() should not return VNodes directly - ` +
@@ -697,6 +717,10 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
+    /* 
+      proxyRefs 代理返回的
+      把对象给代理 new Proxy 
+    */
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
@@ -708,6 +732,9 @@ export function handleSetupResult(
       }`
     )
   }
+  /* 
+    最后的setup 的处理
+  */
   finishComponentSetup(instance, isSSR)
 }
 
@@ -735,6 +762,9 @@ export function registerRuntimeCompiler(_compile: any) {
 // dev only
 export const isRuntimeOnly = () => !compile
 
+/* 
+
+*/
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,
