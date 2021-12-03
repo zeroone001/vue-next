@@ -357,7 +357,7 @@ function baseCreateRenderer(
   }
   /* 解构 */
   const {
-    insert: hostInsert,
+    insert: hostInsert,  /* insertBefore */
     remove: hostRemove,
     patchProp: hostPatchProp,
     createElement: hostCreateElement,
@@ -607,6 +607,7 @@ function baseCreateRenderer(
     }
     hostRemove(anchor!)
   }
+
 /* 下面是如何挂载DOM */
   const processElement = (
     n1: VNode | null,
@@ -643,7 +644,8 @@ function baseCreateRenderer(
         optimized
       )
     }
-  }
+  };
+
   /* 挂载新的元素 */
   const mountElement = (
     vnode: VNode,
@@ -658,6 +660,7 @@ function baseCreateRenderer(
     let el: RendererElement
     let vnodeHook: VNodeHook | undefined | null
     const { type, props, shapeFlag, transition, patchFlag, dirs } = vnode
+    /* 创建DOM元素节点 */
     if (
       !__DEV__ &&
       vnode.el &&
@@ -668,20 +671,28 @@ function baseCreateRenderer(
       // Only static vnodes can be reused, so its mounted DOM nodes should be
       // exactly the same, and we can simply do a clone here.
       // only do this in production since cloned trees cannot be HMR updated.
+      /* vNode.el非空，表示它要被重用，只有静态vNode可以被重用，这里采用克隆。
+      // 只在生产中生效，克隆的树不能被HMR更新 */
       el = vnode.el = hostCloneNode(vnode.el)
     } else {
+      /* 
+      创建新元素  
+      createElement 
+      */
       el = vnode.el = hostCreateElement(
         vnode.type as string,
         isSVG,
         props && props.is,
         props
       )
-
+        /* 先挂载子节点，因为节点可以依赖于已经呈现的字节点内容 */
       // mount children first, since some props may rely on child content
       // being already rendered, e.g. `<select value>`
       if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        /* 处理子节点是文本内容的情况 */
         hostSetElementText(el, vnode.children as string)
       } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        /* 处理子节点是数组的情况 */
         mountChildren(
           vnode.children as VNodeArrayChildren,
           el,
@@ -698,6 +709,9 @@ function baseCreateRenderer(
         invokeDirectiveHook(vnode, null, parentComponent, 'created')
       }
       // props
+      /* 
+        当前元素el处理属性相关，如style/class/event等
+      */
       if (props) {
         for (const key in props) {
           if (key !== 'value' && !isReservedProp(key)) {
@@ -726,6 +740,10 @@ function baseCreateRenderer(
         if ('value' in props) {
           hostPatchProp(el, 'value', null, props.value)
         }
+        /* 
+          处理节点挂载之前的钩子函数 
+          原来在这里呀，生命周期钩子函数
+        */
         if ((vnodeHook = props.onVnodeBeforeMount)) {
           invokeVNodeHook(vnodeHook, parentComponent, vnode)
         }
@@ -733,6 +751,7 @@ function baseCreateRenderer(
       // scopeId
       setScopeId(el, vnode, vnode.scopeId, slotScopeIds, parentComponent)
     }
+
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       Object.defineProperty(el, '__vnode', {
         value: vnode,
@@ -755,6 +774,10 @@ function baseCreateRenderer(
     if (needCallTransitionHooks) {
       transition!.beforeEnter(el)
     }
+    /* 
+      把元素挂载到容器上
+      insertBefore 就是原生的这个函数
+    */
     hostInsert(el, container, anchor)
     if (
       (vnodeHook = props && props.onVnodeMounted) ||
@@ -762,6 +785,9 @@ function baseCreateRenderer(
       dirs
     ) {
       queuePostRenderEffect(() => {
+        /* 
+          挂载完了执行mount
+        */
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
         needCallTransitionHooks && transition!.enter(el)
         dirs && invokeDirectiveHook(vnode, null, parentComponent, 'mounted')
@@ -1181,7 +1207,9 @@ function baseCreateRenderer(
       }
     }
   }
-
+  /* 
+      这是组件挂载的逻辑
+  */
   const processComponent = (
     n1: VNode | null,
     n2: VNode,
@@ -1218,7 +1246,10 @@ function baseCreateRenderer(
       updateComponent(n1, n2, optimized)
     }
   }
-
+  /* 
+    挂载组件
+    创建组件实例->设置组件实例->执行带副作用的渲染函数
+  */
   const mountComponent: MountComponentFn = (
     initialVNode,
     container,
@@ -1230,6 +1261,9 @@ function baseCreateRenderer(
   ) => {
     // 2.x compat may pre-create the component instance before actually
     // mounting
+    /* 
+      创建组件实例
+    */
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
     const instance: ComponentInternalInstance =
@@ -1250,6 +1284,7 @@ function baseCreateRenderer(
     }
 
     // inject renderer internals for keepAlive
+    /* 将keepAlive注入渲染器内部 */
     if (isKeepAlive(initialVNode)) {
       ;(instance.ctx as KeepAliveContext).renderer = internals
     }
@@ -1259,6 +1294,9 @@ function baseCreateRenderer(
       if (__DEV__) {
         startMeasure(instance, `init`)
       }
+      /* 
+        设置组件实例
+      */
       setupComponent(instance)
       if (__DEV__) {
         endMeasure(instance, `init`)
@@ -1278,7 +1316,7 @@ function baseCreateRenderer(
       }
       return
     }
-
+    /* 设置并执行带有副作用的渲染函数 */
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1329,7 +1367,9 @@ function baseCreateRenderer(
       instance.vnode = n2
     }
   }
+  /* 
 
+  */
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,
@@ -1413,6 +1453,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
+          // 把子树挂载到container上
           patch(
             null,
             subTree,
@@ -1577,7 +1618,7 @@ function baseCreateRenderer(
           popWarningContext()
         }
       }
-    }
+    } // componentUpdateFn
 
     // create reactive effect for rendering
     const effect = new ReactiveEffect(
@@ -1585,7 +1626,7 @@ function baseCreateRenderer(
       () => queueJob(instance.update),
       instance.scope // track it in component's effect scope
     )
-
+      /* 创建响应式的副作用函数 */
     const update = (instance.update = effect.run.bind(effect) as SchedulerJob)
     update.id = instance.uid
     // allowRecurse

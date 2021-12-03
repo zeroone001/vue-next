@@ -1,3 +1,17 @@
+# Vue3 源码学习
+
+## 初始化流程
+
+1. `createApp(App) // @vue/runtime-dom` 创建Vue实例，扩展一些方法，比如use, mount, mixin, component, directive; 方法最终的定义位置为 `runtime-core/src/apiCreateApp.ts`
+2. createRenderer -> baseCreateRenderer() 对外暴露三个方法，render、hydrate、createApp； hydrate的实际作用是createApp返回的vue实例对象
+3. createAppAPI(render, hydrate)； 返回createApp() 并且扩展了一些实例方法，链式调用
+4. mount(rootContainer: HostElement, isHydrate?: boolean) 作用， 把传入的根组件转化为VNode，然后挂载到rootContainer 中
+5. render(vnode, container) 作用： 将VNode渲染到容器container上
+6. 
+
+
+
+
 # vue-next [![npm](https://img.shields.io/npm/v/vue/next.svg)](https://www.npmjs.com/package/vue/v/next) [![build status](https://github.com/vuejs/vue-next/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/vuejs/vue-next/actions/workflows/ci.yml)
 
 This is the repository for Vue 3.0.

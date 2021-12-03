@@ -34,6 +34,11 @@ import {
  */
 let accessedAttrs: boolean = false
 
+/* 
+  下面是一些组件的渲染方法
+*/
+
+
 export function markAttrsAccessed() {
   accessedAttrs = true
 }

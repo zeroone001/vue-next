@@ -313,7 +313,6 @@ export function createAppAPI<HostElement>(
           /* 
             rootComponent 就是 根组件APP
             根据组件创建虚拟节点
-
           */
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
