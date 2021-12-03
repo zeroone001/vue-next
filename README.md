@@ -19,6 +19,7 @@
 
 * runtime-dom   运行时dom 关api，属性，事件处理
 * runtime-core  运行时核心实例相关代码（平台无关）
+* shared 内部工具库
  
 
 # vue-next [![npm](https://img.shields.io/npm/v/vue/next.svg)](https://www.npmjs.com/package/vue/v/next) [![build status](https://github.com/vuejs/vue-next/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/vuejs/vue-next/actions/workflows/ci.yml)
