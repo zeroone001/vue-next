@@ -400,6 +400,9 @@ function createBaseVNode(
   isBlockNode = false,
   needFullChildrenNormalization = false
 ) {
+  /* 
+    创建虚拟节点
+  */
   const vnode = {
     __v_isVNode: true,
     __v_skip: true,
@@ -429,6 +432,9 @@ function createBaseVNode(
   } as VNode
 
   if (needFullChildrenNormalization) {
+    /* 
+      标准化子节点，把不同数据类型的 children 转成数组或者文本类型
+    */
     normalizeChildren(vnode, children)
     // normalize suspense children
     if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
@@ -476,11 +482,22 @@ function createBaseVNode(
 }
 
 export { createBaseVNode as createElementVNode }
-
+/* 
+  createVNode 函数在这
+*/
 export const createVNode = (
   __DEV__ ? createVNodeWithArgsTransform : _createVNode
 ) as typeof _createVNode
+/* 
+  _createVNode 主要是这个函数
+  根据组件和组件属性，生成VNode虚拟节点
+  本质是一个描述DOM 的 JS对象， 是对抽象事物的描述
 
+  对属性props标准化
+  将VNode类型信息进行编码为位图
+  创建VNode对象
+  对子节点进行标准化
+*/
 function _createVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
@@ -490,12 +507,15 @@ function _createVNode(
   isBlockNode = false
 ): VNode {
   if (!type || type === NULL_DYNAMIC_COMPONENT) {
+    /* 不传，默认注释类型的虚拟节点 */
     if (__DEV__ && !type) {
       warn(`Invalid vnode type when creating vnode: ${type}.`)
     }
     type = Comment
   }
-
+  /* 
+    已经是虚拟节点，则克隆一个返回
+  */
   if (isVNode(type)) {
     // createVNode receiving an existing vnode. This happens in cases like
     // <component :is="vnode"/>
@@ -508,6 +528,9 @@ function _createVNode(
   }
 
   // class component normalization.
+  /* 
+    类组件标准化
+  */
   if (isClassComponent(type)) {
     type = type.__vccOpts
   }
@@ -518,6 +541,9 @@ function _createVNode(
   }
 
   // class & style normalization.
+  /* 
+    style 和 class的标准化
+  */
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
     props = guardReactiveProps(props)!
@@ -536,6 +562,9 @@ function _createVNode(
   }
 
   // encode the vnode type information into a bitmap
+  /* 
+    将vnode类型信息编码为位图
+  */
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : __FEATURE_SUSPENSE__ && isSuspense(type)
@@ -721,7 +750,9 @@ export function normalizeVNode(child: VNodeChild): VNode {
 export function cloneIfMounted(child: VNode): VNode {
   return child.el === null || child.memo ? child : cloneVNode(child)
 }
-
+/* 
+  标准化子节点，把不同数据类型的 children 转成数组或者文本类型
+*/
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
   const { shapeFlag } = vnode

@@ -59,6 +59,7 @@ import {
 import { updateProps } from './componentProps'
 import { updateSlots } from './componentSlots'
 import { pushWarningContext, popWarningContext, warn } from './warning'
+/* createAppAPI 创建实例API */
 import { createAppAPI, CreateAppFunction } from './apiCreateApp'
 import {
   SuspenseBoundary,
@@ -336,6 +337,9 @@ function baseCreateRenderer(
   这个函数超级长
   createRenderer 的主逻辑操作
   这个函数是核心逻辑
+  功能： 
+  1. 组件渲染的擦行间，更新，卸载
+  2，返回渲染函数，创建应用实例方法，和hydrate
 */
 function baseCreateRenderer(
   options: RendererOptions,
@@ -351,7 +355,7 @@ function baseCreateRenderer(
   if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
     setDevtoolsHook(target.__VUE_DEVTOOLS_GLOBAL_HOOK__, target)
   }
-
+  /* 解构 */
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -370,10 +374,14 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  /* 
+    第一个函数就定义了patch，说明是很重要的
+
+  */
   const patch: PatchFn = (
-    n1,
-    n2,
-    container,
+    n1, /* 旧节点 */
+    n2, /* 新节点 */
+    container, /* DOM容器，vNode渲染成dom会挂载到该节点下 */
     anchor = null,
     parentComponent = null,
     parentSuspense = null,
@@ -381,38 +389,44 @@ function baseCreateRenderer(
     slotScopeIds = null,
     optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
   ) => {
+    /* 如果新旧节点相同，则直接返回 */
     if (n1 === n2) {
       return
     }
 
     // patching & not same type, unmount old tree
+    /* 
+      存在旧节点，且，新旧节点不同，则卸载旧节点
+    */
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
-
+    /* PatchFlags.BAIL：一个特殊标志，表示differ算法应该退出优化模式 */
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
       n2.dynamicChildren = null
     }
+    /* 
 
+    */
     const { type, ref, shapeFlag } = n2
     switch (type) {
-      case Text:
+      case Text: /* 处理文本节点 */
         processText(n1, n2, container, anchor)
         break
-      case Comment:
+      case Comment: /* 处理注释节点 */
         processCommentNode(n1, n2, container, anchor)
         break
-      case Static:
+      case Static: /* 处理静态节点 */
         if (n1 == null) {
           mountStaticNode(n2, container, anchor, isSVG)
         } else if (__DEV__) {
           patchStaticNode(n1, n2, container, isSVG)
         }
         break
-      case Fragment:
+      case Fragment: /* 处理Fragment元素 */
         processFragment(
           n1,
           n2,
@@ -426,7 +440,11 @@ function baseCreateRenderer(
         )
         break
       default:
+         /* 按位与 */
         if (shapeFlag & ShapeFlags.ELEMENT) {
+          /* 处理DOM元素 
+            主要是这个
+          */
           processElement(
             n1,
             n2,
@@ -439,6 +457,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          /* 处理组件 */
           processComponent(
             n1,
             n2,
@@ -451,6 +470,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          /* 处理TELEPORT */
           ;(type as typeof TeleportImpl).process(
             n1 as TeleportVNode,
             n2 as TeleportVNode,
@@ -464,6 +484,7 @@ function baseCreateRenderer(
             internals
           )
         } else if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
+          // 处理SUSPENSE
           ;(type as typeof SuspenseImpl).process(
             n1,
             n2,
@@ -586,7 +607,7 @@ function baseCreateRenderer(
     }
     hostRemove(anchor!)
   }
-
+/* 下面是如何挂载DOM */
   const processElement = (
     n1: VNode | null,
     n2: VNode,
@@ -600,6 +621,7 @@ function baseCreateRenderer(
   ) => {
     isSVG = isSVG || (n2.type as string) === 'svg'
     if (n1 == null) {
+      /* 旧节点不存在的话，则挂载新的元素 */
       mountElement(
         n2,
         container,
@@ -622,7 +644,7 @@ function baseCreateRenderer(
       )
     }
   }
-
+  /* 挂载新的元素 */
   const mountElement = (
     vnode: VNode,
     container: RendererElement,
@@ -2315,16 +2337,24 @@ function baseCreateRenderer(
     }
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
-
+  /* 渲染函数 */
   const render: RootRenderFunction = (vnode, container, isSVG) => {
     if (vnode == null) {
+      /* 虚拟节点不存在，就销毁 */
       if (container._vnode) {
         unmount(container._vnode, null, null, true)
       }
     } else {
+      /* 
+        虚拟节点存在，就更新或者，创建
+        container._vnode： 旧的虚拟节点
+        vnode 新的VNode
+        container： 最终要挂载DOM的容器
+      */
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
     flushPostFlushCbs()
+    /* 缓存虚拟节点的数据，作为已经完成渲染的标识  */
     container._vnode = vnode
   }
 
@@ -2352,6 +2382,7 @@ function baseCreateRenderer(
   return {
     render,
     hydrate,
+    /* 关键的render函数，在mount里面调用 */
     createApp: createAppAPI(render, hydrate)
   }
 } /* baseCreateRenderer END */

@@ -173,22 +173,37 @@ export type CreateAppFunction<HostElement> = (
 ) => App<HostElement>
 
 let uid = 0
+/* 
+  创建实例的API 
+  const app = createApp(App);
+// app.config.devtools = true;
+app.use(store).use(router).mount('#app')
+创建定义一个实例上下文context，包含属性和方法
 
+*/
 export function createAppAPI<HostElement>(
   render: RootRenderFunction,
   hydrate?: RootHydrateFunction
 ): CreateAppFunction<HostElement> {
+  /* 
+  接受两个参数，
+  1个是根组件，
+  1个是根组件的属性 */
   return function createApp(rootComponent, rootProps = null) {
     if (rootProps != null && !isObject(rootProps)) {
       __DEV__ && warn(`root props passed to app.mount() must be an object.`)
       rootProps = null
     }
 
+    /* 创建一个上下文对象 */
     const context = createAppContext()
     const installedPlugins = new Set()
 
     let isMounted = false
-
+    /* 
+      重写上下文对象的 app 属性 
+    
+    */
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -198,7 +213,7 @@ export function createAppAPI<HostElement>(
       _instance: null,
 
       version,
-
+      /* 暴露config属性 */
       get config() {
         return context.config
       },
@@ -210,14 +225,24 @@ export function createAppAPI<HostElement>(
           )
         }
       },
+      /* 
+        这里使用
+        vuex 和 router  
+        插件的安装， 
 
+      */
       use(plugin: Plugin, ...options: any[]) {
         if (installedPlugins.has(plugin)) {
+          /* 是否已经安装过了 */
           __DEV__ && warn(`Plugin has already been applied to target app.`)
         } else if (plugin && isFunction(plugin.install)) {
+          /* 如果是对象，必须有install方法 
+            跟Vue2是一样的
+          */
           installedPlugins.add(plugin)
           plugin.install(app, ...options)
         } else if (isFunction(plugin)) {
+          /* 如果是函数， 则默认是安装函数 */
           installedPlugins.add(plugin)
           plugin(app, ...options)
         } else if (__DEV__) {
@@ -273,13 +298,23 @@ export function createAppAPI<HostElement>(
         context.directives[name] = directive
         return app
       },
-
+      /* 
+        这里是mount对象，挂载到DOM结构上的，
+        但是在外面被重写了 
+        虽然在外面重写了，但是是先获取的这个方法，也调用了
+      */
       mount(
         rootContainer: HostElement,
         isHydrate?: boolean,
         isSVG?: boolean
       ): any {
+        /* 防止重复挂载 */
         if (!isMounted) {
+          /* 
+            rootComponent 就是 根组件APP
+            根据组件创建虚拟节点
+
+          */
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
@@ -298,6 +333,7 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
+            /* 关键的render函数是在这里调用的 */
             render(vnode, rootContainer, isSVG)
           }
           isMounted = true
@@ -311,6 +347,7 @@ export function createAppAPI<HostElement>(
           }
 
           return getExposeProxy(vnode.component!) || vnode.component!.proxy
+
         } else if (__DEV__) {
           warn(
             `App has already been mounted.\n` +

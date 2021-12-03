@@ -76,7 +76,9 @@ export const createApp = ((...args) => {
     injectNativeTagCheck(app)
     injectCompilerOptionsCheck(app)
   }
-
+  /* 
+    createAppAPI 函数里面定义的mount
+  */
   const { mount } = app
   /* 重写mount */
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
